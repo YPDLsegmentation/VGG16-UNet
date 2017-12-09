@@ -35,7 +35,7 @@ test_gt_file = os.path.join(file_prefix, 'data/gtFile_test_onehot.npy')
 # Learning params
 learning_rate = 0.001
 weight = 5. # control regularzation term weight
-num_epochs = 50
+num_epochs = 20
 batch_size = 4
 beta1 = 0.9 #momentum for adam
 
@@ -48,29 +48,31 @@ train_layers = ['conv1_1', 'conv1_2', \
                 'conv3_1', 'conv3_2', 'conv3_3', \
                 'conv4_1', 'conv4_2', 'conv4_3', \
                 'conv5_1', 'conv5_2', 'conv5_3', \
-                'deconv1', 'norm1', \
+                'deconv1', \
                 'conv6_1', 'conv6_2', \
-                'deconv2', 'norm2', \
+                'deconv2', \
                 'conv7_1', 'conv7_2', \
-                'deconv3', 'norm3', \
+                'deconv3', \
                 'conv8_1', 'conv8_2', \
-                'deconv4', 'norm4', \
+                'deconv4', \
                 'conv9_1', \
                 'deconv5', \
                 'conv10_1']
-height = 1024
-width = 2048
+height = 512
+width = 1024
+mode = 1
+ratio = 2
 
 ######################
 # How often we want to write the tf.summary data to disk
 display_step = 10
-save_epoch = 10
+save_epoch = 5
 
 ######################
 # Path for tf.summary.FileWriter and to store model checkpoints
-filewriter_path = os.path.join(file_prefix, "record/tfrecord4_norm")
-checkpoint_path = os.path.join(file_prefix, "record/tfrecord4_norm")
-old_checkpoint_path = os.path.join(file_prefix, "record/old_tfrecord4_norm")
+filewriter_path = os.path.join(file_prefix, "record/tfrecord4_no_norm")
+checkpoint_path = os.path.join(file_prefix, "record/tfrecord4_no_norm")
+old_checkpoint_path = os.path.join(file_prefix, "record/old_tfrecord4_no_norm")
 
 # Create parent path if it doesn't exist
 if not os.path.isdir(filewriter_path): 
@@ -201,9 +203,9 @@ saver = tf.train.Saver()
 
 # Initalize the data generator seperately for the training and validation set
 train_generator = ImageDataGenerator(train_file, train_gt_file,
-                                     data_augment = False, shuffle = True)
+                                     data_augment = True, shuffle = True)
 val_generator = ImageDataGenerator(val_file, val_gt_file,
-                                   data_augment= False, shuffle = False) 
+                                   data_augment= True, shuffle = False) 
 """
 saving space!
 test_generator = ImageDataGenerator(test_file, test_gt_file,
@@ -254,7 +256,7 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
             print('epoch number: {}. step number: {}'.format(epoch+1, step))
 
             # Get a batch of images and labels
-            batch_xs, batch_ys = train_generator.next_batch(batch_size)
+            batch_xs, batch_ys = train_generator.next_batch(batch_size, mode, ratio)
             
             # And run the training op
             sess.run(train_op, feed_dict={x: batch_xs, 
@@ -286,7 +288,7 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
         test_cIoU = np.zeros((num_classes,), dtype=np.float32)
         test_count = 0
         for _ in range(val_batches_per_epoch):
-            batch_tx, batch_ty = val_generator.next_batch(batch_size)
+            batch_tx, batch_ty = val_generator.next_batch(batch_size, mode, ratio)
             result = sess.run([meanIoU, loss] + classIoU, feed_dict={x: batch_tx, 
                                                                      y: batch_ty, 
                                                                      keep_prob: 1.})
