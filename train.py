@@ -43,11 +43,21 @@ beta1 = 0.9 #momentum for adam
 # Network params
 dropout_rate = .5 # no use here
 num_classes = 6
-train_layers = ['conv1', 'conv2', 'conv3', 'conv4', 'conv5', \
-                'conv6', 'conv7', 'conv8', 'conv9', 'conv10', \
-                'conv11', 'conv12', 'conv13', \
-                'norm1', 'norm2', 'norm3', 'norm4', \
-                'deconv1', 'deconv2', 'deconv3', 'deconv4', 'deconv5']
+train_layers = ['conv1_1', 'conv1_2', \
+                'conv2_1', 'conv2_2', \
+                'conv3_1', 'conv3_2', 'conv3_3', \
+                'conv4_1', 'conv4_2', 'conv4_3', \
+                'conv5_1', 'conv5_2', 'conv5_3', \
+                'deconv1', 'norm1', \
+                'conv6_1', 'conv6_2', \
+                'deconv2', 'norm2', \
+                'conv7_1', 'conv7_2', \
+                'deconv3', 'norm3', \
+                'conv8_1', 'conv8_2', \
+                'deconv4', 'norm4', \
+                'conv9_1', \
+                'deconv5', \
+                'conv10_1']
 height = 1024
 width = 2048
 
@@ -82,7 +92,7 @@ model = NET(x, height, width, keep_prob, train_layers, out_channels=num_classes,
 
 # Link variable to model output
 # NOTE: no softmax used, should use an extra softmax layer
-pred_maps = model.deconv5
+pred_maps = model.conv10_1
 tf.Print(pred_maps, [tf.constant("pred_maps"), pred_maps])
 softmax_maps = tf.nn.softmax(pred_maps, dim=-1)
 tf.Print(pred_maps, [tf.constant("softmax_maps"), softmax_maps])

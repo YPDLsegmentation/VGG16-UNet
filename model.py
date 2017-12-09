@@ -78,29 +78,50 @@ class NET(object):
     print "deconv1 shape: {}".format(self.deconv1.shape)
     print "norm1 shape: {}".format(self.norm1.shape)
     print "concat1 shape: {}".format(self.concat1.shape)
+
+    self.conv6_1 = conv(self.concat1, 3, 3, 512, 1, 1, padding = 'SAME', name = 'conv6_1') # [~, w/16, h/16, 512]
+    self.conv6_2 = conv(self.conv6_1, 3, 3, 256, 1, 1, padding = 'SAME', name = 'conv6_2') # [~, w/16, h/16, 256]
+    print "conv6_1 shape: {}".format(self.conv6_1.shape)
+    print "conv6_2 shape: {}".format(self.conv6_2.shape)
     
-    self.deconv2 = deconv(self.concat1, 3, 3, 256, 2, 2, output_shape=[self.batch_size, self.height/8, self.width/8, 256], padding='SAME', name = 'deconv2') #[~, w/8, h/8, 256]
+    self.deconv2 = deconv(self.conv6_2, 3, 3, 256, 2, 2, output_shape=[self.batch_size, self.height/8, self.width/8, 256], padding='SAME', name = 'deconv2') #[~, w/8, h/8, 256]
     self.norm2 = norm_rescale(self.pool3, 256, 'norm2')                                                                                                      #[~, w/8, h/8, 256]
     self.concat2 = tf.concat([self.deconv2, self.norm2], axis=3)                                                                                             #[~, w/8, h/8, 512]
     print "deconv2 shape: {}".format(self.deconv2.shape)
     print "norm2 shape: {}".format(self.norm2.shape)
     print "concat2 shape: {}".format(self.concat2.shape)
     
-    self.deconv3 = deconv(self.concat2, 3, 3, 128, 2, 2, output_shape=[self.batch_size, self.height/4, self.width/4, 128], padding='SAME', name = 'deconv3') #[~, w/4, h/4, 128]
+    self.conv7_1 = conv(self.concat2, 3, 3, 256, 1, 1, padding = 'SAME', name = 'conv7_1') # [~, w/8, h/8, 256]
+    self.conv7_2 = conv(self.conv7_1, 3, 3, 128, 1, 1, padding = 'SAME', name = 'conv7_2') # [~, w/8, h/8, 128]
+    print "conv7_1 shape: {}".format(self.conv7_1.shape)
+    print "conv7_2 shape: {}".format(self.conv7_2.shape)
+
+    self.deconv3 = deconv(self.conv7_2, 3, 3, 128, 2, 2, output_shape=[self.batch_size, self.height/4, self.width/4, 128], padding='SAME', name = 'deconv3') #[~, w/4, h/4, 128]
     self.norm3 = norm_rescale(self.pool2, 128, 'norm3')                                                                                                      #[~, w/4, h/4, 128]
     self.concat3 = tf.concat([self.deconv3, self.norm3], axis=3)                                                                                             #[~, w/4, h/4, 256]
     print "deconv3 shape: {}".format(self.deconv3.shape)
     print "norm3 shape: {}".format(self.norm3.shape)
     print "concat3 shape: {}".format(self.concat3.shape)
+
+    self.conv8_1 = conv(self.concat3, 3, 3, 128, 1, 1, padding = 'SAME', name = 'conv8_1') # [~, w/4, h/4, 128]
+    self.conv8_2 = conv(self.conv8_1, 3, 3, 64, 1, 1, padding = 'SAME', name = 'conv8_2') # [~, w/4, h/4, 64]
+    print "conv8_1 shape: {}".format(self.conv8_1.shape)
+    print "conv8_2 shape: {}".format(self.conv8_2.shape)
     
-    self.deconv4 = deconv(self.concat3, 3, 3, 64, 2, 2, output_shape=[self.batch_size, self.height/2, self.width/2, 64], padding='SAME', name = 'deconv4') #[~, w/2, h/2, 64]
+    self.deconv4 = deconv(self.conv8_2, 3, 3, 64, 2, 2, output_shape=[self.batch_size, self.height/2, self.width/2, 64], padding='SAME', name = 'deconv4') #[~, w/2, h/2, 64]
     self.norm4 = norm_rescale(self.pool1, 64, 'norm4')                                                                                                     #[~, w/2, h/2, 64]
     self.concat4 = tf.concat([self.deconv4, self.norm4], axis=3)                                                                                           #[~, w/2, h/2, 128]
     print "deconv4 shape: {}".format(self.deconv4.shape)
     print "norm4 shape: {}".format(self.norm4.shape)
     print "concat4 shape: {}".format(self.concat4.shape)
     
-    self.deconv5 = deconv(self.concat4, 3, 3, self.out_channels, 2, 2, output_shape=[self.batch_size, self.height, self.width, self.out_channels], padding='SAME', name = 'deconv5', non_linear="NONE") #[~, w, h, out_channels]
+    self.conv9_1 = conv(self.concat4, 3, 3, 64, 1, 1, padding = 'SAME', name = 'conv9_1') # [~, w/2, h/2, 64]
+    print "conv9_1 shape: {}".format(self.conv9_1.shape)
+
+    self.deconv5 = deconv(self.conv9_1, 3, 3, self.out_channels, 2, 2, output_shape=[self.batch_size, self.height, self.width, 64], padding='SAME', name = 'deconv5') #[~, w, h, 64]
+    self.conv10_1 = conv(self.deconv5, 1, 1, self.out_channels, 1, 1, padding = 'SAME', non_linear="NONE", name='conv10_1')#[~, w, h, out_channels(<64)]
+    print "deconv5 shape: {}".format(self.deconv5.shape)
+    print "conv10_1 shape: {}".format(self.conv10_1.shape)
 
   def vbp(self):
     pass
