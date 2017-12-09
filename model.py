@@ -118,27 +118,24 @@ class NET(object):
   def vbp(self):
     pass
 
-  def load_initial_weights(self, session, restore_vars=None):
-    if restore_vars is None:
+  def load_initial_weights(self, session, restore_layers=None):
+    if restore_layers is None:
       return
-    # Load the weights into memory
-    weights_dict = np.load(self.WEIGHTS_PATH, encoding = 'bytes').item()
-    for var in restore_vars:
-      name = var.name
-      if weights_dict.has_key(name):
-        print "restoring var {}...".format(name)
-        session.run(var.assign(weights_dict[name]))
+      # Load the weights into memory
+      weights_dict = np.load(self.WEIGHTS_PATH, encoding = 'bytes').item()
+      for layer in restore_layers:
+        if weights_dict.has_key(layer):
+          print "restoring layer {}...".format(name)
+          with tf.variable_scope(layer, reuse=True) as scope:
+            weights = tf.get_variable('weights', shape = [filter_height, filter_width, input_channels, num_filters])
+            biases = tf.get_variable('biases', shape = [num_filters])  
+            session.run(weights.assign(weights_dict[layer][0]))
+            session.run(biases.assign(weights_dict[layer][1]))
       else:
-        print "no value for var {}".format(name)
+        print "no value for layer {}".format(layer)
      
   def save_weights(self, session, file_name='pretrain.npy', save_vars=None):
-    if save_vars is None:
-      return
-    weights_dict = {}
-    for var in save_vars:
-      weights_dict[var.name] = session.run(var)
-    np.save(file_name, weights_dict) 
-    print "weights saved in file {}".format(file_name)
+    pass
   
 """
 Predefine all necessary layer for the Model

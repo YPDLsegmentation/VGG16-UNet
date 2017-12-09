@@ -58,6 +58,12 @@ train_layers = ['conv1_1', 'conv1_2', \
                 'conv9_1', \
                 'deconv5', \
                 'conv10_1']
+
+restore_layers = ['conv1_1', 'conv1_2', \
+                  'conv2_1', 'conv2_2', \
+                  'conv3_1', 'conv3_2', 'conv3_3', \
+                  'conv4_1', 'conv4_2', 'conv4_3', \
+                  'conv5_1', 'conv5_2', 'conv5_3']
 height = 512
 width = 1024
 mode = 1
@@ -224,7 +230,8 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
   if FROM_SCRATCH:
     # Initialize all variables
     sess.run(tf.global_variables_initializer())
-    
+    # load pretrain weights
+    model.load_initial_weights(sess, restore_layers)
     # Add the model graph to TensorBoard
     writer.add_graph(sess.graph)
   else:
