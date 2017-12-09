@@ -121,16 +121,16 @@ class NET(object):
   def load_initial_weights(self, session, restore_layers=None):
     if restore_layers is None:
       return
-      # Load the weights into memory
-      weights_dict = np.load(self.WEIGHTS_PATH, encoding = 'bytes').item()
-      for layer in restore_layers:
-        if weights_dict.has_key(layer):
-          print "restoring layer {}...".format(name)
-          with tf.variable_scope(layer, reuse=True) as scope:
-            weights = tf.get_variable('weights', shape = [filter_height, filter_width, input_channels, num_filters])
-            biases = tf.get_variable('biases', shape = [num_filters])  
-            session.run(weights.assign(weights_dict[layer][0]))
-            session.run(biases.assign(weights_dict[layer][1]))
+    # Load the weights into memory
+    weights_dict = np.load(self.WEIGHTS_PATH, encoding = 'bytes').item()
+    for layer in restore_layers:
+      if weights_dict.has_key(layer):
+        print "restoring layer {}...".format(name)
+        with tf.variable_scope(layer, reuse=True) as scope:
+          weights = tf.get_variable('weights', shape = [filter_height, filter_width, input_channels, num_filters])
+          biases = tf.get_variable('biases', shape = [num_filters])  
+          session.run(weights.assign(weights_dict[layer][0]))
+          session.run(biases.assign(weights_dict[layer][1]))
       else:
         print "no value for layer {}".format(layer)
      
