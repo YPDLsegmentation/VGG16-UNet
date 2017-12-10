@@ -34,7 +34,7 @@ test_gt_file = os.path.join(file_prefix, 'data/gtFile_test_onehot.npy')
 ######################
 # Learning params
 learning_rate = 0.001
-weight = 5. # control regularzation term weight
+weight = 1. # control regularzation term weight
 num_epochs = 20
 batch_size = 4
 beta1 = 0.9 #momentum for adam
@@ -59,11 +59,14 @@ train_layers = ['conv1_1', 'conv1_2', \
                 'deconv5', \
                 'conv10_1']
 
-restore_layers = ['conv1_1', 'conv1_2', \
+restore_layers = None
+'''
+                 ['conv1_1', 'conv1_2', \
                   'conv2_1', 'conv2_2', \
                   'conv3_1', 'conv3_2', 'conv3_3', \
                   'conv4_1', 'conv4_2', 'conv4_3', \
                   'conv5_1', 'conv5_2', 'conv5_3']
+                '''
 height = 512
 width = 1024
 mode = 1
