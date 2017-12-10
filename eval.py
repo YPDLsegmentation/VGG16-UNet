@@ -28,8 +28,8 @@ train_gt_file = os.path.join(file_prefix, 'data/gtFile_train_onehot.npy')
 val_gt_file = os.path.join(file_prefix, 'data/gtFile_val_onehot.npy')
 test_gt_file = os.path.join(file_prefix, 'data/gtFile_test_onehot.npy')
 #####################
-save_prefix = os.path.join(file_prefix, 'out4_no_norm')
-save_suffix = '_out4.png'
+save_prefix = os.path.join(file_prefix, 'data/out4_no_norm')
+save_suffix = '_out4_no_norm.png'
 
 EVAL_TRAIN = False
 EVAL_TEST = False
@@ -49,6 +49,7 @@ pixels = np.array([[128, 64, 128], # class 0
 
 ######################
 # Learning params
+weight = 1.
 batch_size = 4
 
 ######################
@@ -170,7 +171,7 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
         cIoU = np.zeros((num_classes,), dtype=np.float32)
         count = 0
         out = np.ndarray([train_generator.data_size, height, width, num_classes], dtype=np.float32)
-        for step in range(train_betches_per_epoch):
+        for step in range(train_batches_per_epoch):
             count += 1
             print('step number: {}'.format(step))
             # Get a batch of images and labels
@@ -197,7 +198,7 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
         print 'ls: {}'.format(ls)
         if TRAIN_SAVE:
             for _ in range(count*batch_size):
-                path = train_generator.in_path[_].replace('/n/data/cityscapes/leftImg8bit', save_prefix)
+                path = train_generator.in_paths[_].replace('/n/data/cityscapes/leftImg8bit', save_prefix)
                 path = path.replace('_leftImg8bit.png', save_suffix)
                 tem = out[_] #[, , ,]
                 pred_max = np.max(tem, axis=-1) #[, ,]
@@ -247,7 +248,7 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
         print 'ls: {}'.format(ls)
         if TEST_SAVE:
             for _ in range(count*batch_size):
-                path = test_generator.in_path[_].replace('/n/data/cityscapes/leftImg8bit', save_prefix)
+                path = test_generator.in_paths[_].replace('/n/data/cityscapes/leftImg8bit', save_prefix)
                 path = path.replace('_leftImg8bit.png', save_suffix)
                 tem = out[_] #[, , ,]
                 pred_max = np.max(tem, axis=-1) #[, ,]
@@ -270,15 +271,15 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
         cIoU = np.zeros((num_classes,), dtype=np.float32)
         count = 0
         out = np.ndarray([val_generator.data_size, height, width, num_classes], dtype=np.float32)
-        for step in range(val_betches_per_epoch):
+        for step in range(val_batches_per_epoch):
             count += 1
             print('step number: {}'.format(step))
             # Get a batch of images and labels
             batch_xs, batch_ys = val_generator.next_batch(batch_size, mode, ratio)
             # And run the data
-            result = sess.run([softmax_maps, meanIoU, loss] + classIoU, feed_dict={x: batch_xs, 
-                                                                                   y: batch_ys, 
-                                                                                   keep_prob: 1.})
+            result = sess.run([softmax_maps, meanIoU, crent_loss, smooth, loss] + classIoU, feed_dict={x: batch_xs, 
+                                                                                                       y: batch_ys, 
+                                                                                                       keep_prob: 1.})
             out[step*batch_size: (step+1)*batch_size] = result[0]
             mIoU += result[1]
             crent_ls += result[2]
@@ -297,7 +298,7 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
         print 'ls: {}'.format(ls)
         if VAL_SAVE:
             for _ in range(count*batch_size):
-                path = val_generator.in_path[_].replace('/n/data/cityscapes/leftImg8bit', save_prefix)
+                path = val_generator.in_paths[_].replace('/n/data/cityscapes/leftImg8bit', save_prefix)
                 path = path.replace('_leftImg8bit.png', save_suffix)
                 tem = out[_] #[, , ,]
                 pred_max = np.max(tem, axis=-1) #[, ,]
