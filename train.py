@@ -272,7 +272,7 @@ with tf.Session(config=tf.ConfigProto(log_device_placement=False, \
 
             step += 1
             
-        if (epoch+1)%save_epoch:
+        if (epoch+1)%save_epoch == 0:
             print("{} Saving checkpoint of model...".format(datetime.now()))  
             #save checkpoint of the model
             checkpoint_name = os.path.join(checkpoint_path, 'model_epoch'+ str(epoch+1) + '.ckpt')
