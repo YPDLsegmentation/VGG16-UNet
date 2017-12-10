@@ -125,10 +125,10 @@ class NET(object):
     weights_dict = np.load(self.WEIGHTS_PATH, encoding = 'bytes').item()
     for layer in restore_layers:
       if weights_dict.has_key(layer):
-        print "restoring layer {}...".format(name)
+        print "restoring layer {}...".format(layer)
         with tf.variable_scope(layer, reuse=True) as scope:
-          weights = tf.get_variable('weights', shape = [filter_height, filter_width, input_channels, num_filters])
-          biases = tf.get_variable('biases', shape = [num_filters])  
+          weights = tf.get_variable('weights')
+          biases = tf.get_variable('biases')  
           session.run(weights.assign(weights_dict[layer][0]))
           session.run(biases.assign(weights_dict[layer][1]))
       else:
