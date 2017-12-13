@@ -153,7 +153,7 @@ def conv(x, filter_height, filter_width, num_filters, stride_y, stride_x, name,
                                        strides = [1, stride_y, stride_x, 1],
                                        padding = padding)
   
-  with tf.variable_scope(name) as scope:
+  with tf.variable_scope(name, reuse=tf.AUTO_REUSE) as scope:
     # Create tf variables for the weights and biases of the conv layer
     weights = tf.get_variable('weights', shape = [filter_height, filter_width, input_channels/groups, num_filters])
     biases = tf.get_variable('biases', shape = [num_filters])  
@@ -191,7 +191,7 @@ def deconv(x, filter_height, filter_width, num_filters, stride_y, stride_x, outp
   # Get number of input channels
   input_channels = int(x.get_shape()[-1])
 
-  with tf.variable_scope(name) as scope:
+  with tf.variable_scope(name, reuse=tf.AUTO_REUSE) as scope:
     # Create tf variables for the weights and biases of the deconv layer
     weights = tf.get_variable('weights', shape = [filter_height, filter_width, num_filters, input_channels])
     biases = tf.get_variable('biases', shape = [num_filters])  
@@ -212,7 +212,7 @@ def deconv(x, filter_height, filter_width, num_filters, stride_y, stride_x, outp
     return nonlin
 
 def fc(x, num_in, num_out, name, relu = True):
-  with tf.variable_scope(name) as scope:
+  with tf.variable_scope(name, reuse=tf.AUTO_REUSE) as scope:
     
     # Create tf variables for the weights and biases
     weights = tf.get_variable('weights', shape=[num_in, num_out], trainable=True)
@@ -242,7 +242,7 @@ def dropout(x, keep_prob):
   return tf.nn.dropout(x, keep_prob)
   
 def norm_rescale(x, channels, name):
-    with tf.variable_scope(name) as scope:
+    with tf.variable_scope(name, reuse=tf.AUTO_REUSE) as scope:
         scale = tf.get_variable('scale', shape=[channels], trainable=True, dtype=tf.float32)
         return scale * tf.nn.l2_normalize(x, dim=[1, 2]) # NOTE: per feature map normalizatin
     
