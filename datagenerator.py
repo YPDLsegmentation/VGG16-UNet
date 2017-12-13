@@ -6,10 +6,14 @@ import random
 from tensorflow import expand_dims
 
 class ImageDataGenerator:
-    def __init__(self, class_list, gtFile=None, data_augment=False, shuffle=False, 
-                 max_image_height = 1024, max_image_width = 2048,
-                 # 5 + 1 classes
+    def __init__(self, class_list, gtFile=None,
                  classes = 6,
+                 # for hard data mining
+                 # class_mask indicates pics containing whichs classes should we choose
+                 # NOTE: mask should be tuple of ints
+                 mask = (0, 1, 2, 3, 4, 5),
+                 data_augment=False, shuffle=False, 
+                 max_image_height = 1024, max_image_width = 2048,
                  input_prefix = '/n/data/cityscapes/leftImg8bit',
                  input_suffix = '_leftImg8bit.png',
                  gt_prefix='/scratch/xz/cityscapes/data/gtFine', 
@@ -23,6 +27,7 @@ class ImageDataGenerator:
         self.max_image_height = max_image_height
         self.max_image_width = max_image_width
         self.classes = classes
+        self.mask = mask
         self.in_prefix = input_prefix
         self.in_suffix = input_suffix
         self.gt_prefix = gt_prefix
@@ -53,6 +58,8 @@ class ImageDataGenerator:
             
             #store total number of data
             self.data_size = len(self.in_paths)
+            self.in_paths = np.array(self.in_paths)
+            self.gt_paths = np.array(self.gt_paths)
         
 
     def prefetch(self, gtFile=None):
@@ -84,10 +91,28 @@ class ImageDataGenerator:
             gt_dict = np.load(gtFile).item()
             for i in range(self.data_size):
                 self.all_gt_images[i] = gt_dict[self.gt_paths[i]]
-        
+
         print "prefetch done"
         # print "all_in_images shape:{}".format(self.all_in_images.shape)
         print "all_gt_images shape:{}".format(self.all_gt_images.shape)
+
+        # record which classes every gt_image contain
+        self.all_gt_classes = (np.sum(self.all_gt_images, axis=(1, 2)) > 0).astype(np.uint8)
+        self.classes_num = np.sum(self.all_gt_classes, axis=0)
+        for i in range(len(self.classes_num)):
+            print "all {} pics containing class {} labels".format(self.classes_num[i], i)
+
+        # use or instread of and
+        index = self.all_gt_classes[:, self.mask[0]] > 0
+        for i in range(1, len(self.mask)):
+            index = np.logical_or(index, self.all_gt_classes[:, self.mask[i]] > 0)
+        
+        # get masked path and gt_imgs
+        self.in_paths = self.in_paths[index]
+        self.gt_paths = self.gt_paths[index]
+        self.all_gt_images = self.all_gt_images[index]
+        self.data_size = len(self.in_paths)
+        print "masked data size: {}".format(self.data_size)
 
     def shuffle_data(self):
         """
@@ -122,6 +147,93 @@ class ImageDataGenerator:
     def next_batch(self, batch_size, mode=0, ratio=1):
         """
         This function gets the next n ( = batch_size) images from the path list
+        and loads the images into them into memory
+        NOTE: 3 modes if data augmented
+        NOTE: ratio: downsample ratio, should be 2^k
+        """
+        # Get next batch of image (path) and labels
+        in_paths = self.in_paths[self.pointer:self.pointer + batch_size]
+        gt_paths = self.gt_paths[self.pointer:self.pointer + batch_size]
+        
+        # Read images
+        scale_height = self.max_image_height
+        scale_width = self.max_image_width
+        min_len = min(scale_height, scale_width)
+        max_len = max(scale_height, scale_width)
+
+        if self.data_augment:
+            if mode == 0:
+                pass
+            elif mode == 1:
+                scale_height /= ratio
+                scale_width /= ratio
+            elif mode == 2:
+                scale_height = min_len
+                scale_width = min_len
+            elif mode == 3:
+                scale_height = min_len / ratio
+                scale_width = min_len / ratio
+
+        # note the order and channels
+        self.in_images = np.ndarray([batch_size, scale_height, scale_width, 3], dtype=np.float32)
+        self.gt_images = np.ndarray([batch_size, scale_height, scale_width, self.classes], dtype=np.float32) # NOTE: for output, using float is ok
+        #in_imgs = self.all_in_images[self.pointer:self.pointer+batch_size, :, :, :]
+        in_imgs = np.ndarray([batch_size, self.max_image_height, self.max_image_width, 3], dtype=np.uint8)
+        for i in range(len(in_paths)):
+            in_imgs[i] = cv2.imread(in_paths[i], cv2.IMREAD_COLOR)
+
+        gt_imgs = self.all_gt_images[self.pointer:self.pointer+batch_size, :, :, :]
+
+        if self.data_augment:
+            if mode == 0:
+                # mode 0: raw image
+                pass
+            elif mode == 1:
+                # mode 1: downsample of raw image
+                choice = random.randint(0, 1)
+                in_imgs = self.downsample_batch(in_imgs, ratio, choice)
+                gt_imgs = self.downsample_batch(gt_imgs, ratio, choice)
+            elif mode == 2:
+                # mode 2: cropping image to 1:1
+                # random crop using numpy slicing
+                upper = random.randint(min_len, max_len)
+                height_upper = min(upper, in_imgs.shape[1])
+                width_upper = min(upper, in_imgs.shape[2])
+                in_imgs = in_imgs[:,  height_upper - min_len: height_upper, width_upper - min_len: width_upper, :]
+                gt_imgs = gt_imgs[:, height_upper - min_len: height_upper, width_upper - min_len: width_upper, :]
+            elif mode == 3:
+                # mode 3: downsample of cropped image
+                # random crop using numpy slicing
+                upper = random.randint(min_len, max_len)
+                height_upper = min(upper, in_imgs.shape[1])
+                width_upper = min(upper, in_imgs.shape[2])
+                in_imgs = in_imgs[:, height_upper - min_len: height_upper, width_upper - min_len: width_upper, :]
+                gt_imgs = gt_imgs[:, height_upper - min_len: height_upper, width_upper - min_len: width_upper, :]
+                # downsample
+                choice = random.randint(0, 1)
+                in_imgs = self.downsample_batch(in_imgs, ratio, choice)
+                gt_imgs = self.downsample_batch(gt_imgs, ratio, choice)
+            
+        assert in_imgs.shape == (batch_size, scale_height, scale_width, 3)
+        assert gt_imgs.shape == (batch_size, scale_height, scale_width, self.classes)
+        # type conversion
+        in_imgs = in_imgs.astype(np.float32)
+        gt_imgs = gt_imgs.astype(np.float32)
+        self.in_images = in_imgs
+        self.gt_images = gt_imgs
+         
+        #update pointer
+        self.pointer += batch_size
+        # reset before exhaustion
+        if self.pointer + batch_size > self.data_size:
+            self.reset_pointer()
+            self.iter += 1
+
+        return self.in_images, self.gt_images
+
+    def next_masked_batch(self, batch_size, mask, mode=0, ratio=1):
+        """
+        This function gets the next n ( = batch_size) masked images from the path list
         and loads the images into them into memory
         NOTE: 3 modes if data augmented
         NOTE: ratio: downsample ratio, should be 2^k

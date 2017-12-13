@@ -9,7 +9,7 @@ from datagenerator import ImageDataGenerator
 Configuration settings
 """
 #######################
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 ######################
 file_prefix = '/scratch/xz/cityscapes'
@@ -60,7 +60,7 @@ restore_layers = None
                   'conv5_1', 'conv5_2', 'conv5_3']
                 '''
 #####################
-big_epoch_num = 10 # passing through all settings counts as one epoch
+big_epoch_num = 20 # passing through all settings counts as one epoch
 # configuration for input 
 size = [[512, 1024], [256, 512], \
         [512, 512], [256, 256]]
@@ -72,7 +72,7 @@ small_epoches_per_big = sum(small_epoches)
 small_epoches_presum = [sum(small_epoches[0:_+1])-small_epoches[_] for _ in range(len(small_epoches))]
 
 ####################
-init_big_epoch = 2
+init_big_epoch = 10
 init_setting = 0
 init_small_epoch = 0
 init_step = 0
@@ -99,11 +99,13 @@ if not os.path.isdir(old_checkpoint_path):
 ######################
 # restore_path
 FROM_SCRATCH = False
-restore_path = os.path.join(old_checkpoint_path, 'model_big_1_setting_3_small_7.ckpt')
+restore_path = os.path.join(old_checkpoint_path, 'model_big_9_setting_3_small_7.ckpt')
 
 # Initalize the data generator seperately for the training and validation set
 train_generator = ImageDataGenerator(train_file, train_gt_file,
+                                     mask=(3,),
                                      data_augment = True, shuffle = True)
+
 val_generator = ImageDataGenerator(val_file, val_gt_file,
                                    data_augment= True, shuffle = False) 
 """
